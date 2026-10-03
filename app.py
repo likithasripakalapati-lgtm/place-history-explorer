@@ -241,7 +241,7 @@ def render_message(message):
 
             st.write(message["content"])
 
-            # =========================================================
+         # =========================================================
 # HELPER: CREATE HISTORY EMAIL SUMMARY
 # =========================================================
 
@@ -249,6 +249,10 @@ def create_history_summary():
 
     if not st.session_state.visited_places:
         return None
+
+    # -----------------------------------------------------
+    # SAVED PLACES
+    # -----------------------------------------------------
 
     saved_places = []
 
@@ -268,13 +272,99 @@ History:
         saved_places
     )
 
+    # -----------------------------------------------------
+    # CONVERSATION / FOLLOW-UP QUESTIONS
+    # -----------------------------------------------------
+
+    conversation_parts = []
+
+    for message in st.session_state.messages:
+
+        if message["kind"] != "text":
+            continue
+
+        role = message["role"]
+        content = message["content"]
+
+        # Ignore the initial welcome message.
+        if (
+            role == "assistant"
+            and content.startswith("Hello ")
+            and "Welcome to Place History Explorer" in content
+        ):
+            continue
+
+        if role == "user":
+
+            conversation_parts.append(
+                f"""
+User question:
+{content}
+"""
+            )
+
+        elif role == "assistant":
+
+            conversation_parts.append(
+                f"""
+Assistant answer:
+{content}
+"""
+            )
+
+    conversation_text = "\n\n".join(
+        conversation_parts
+    )
+
+    # -----------------------------------------------------
+    # GEMINI SUMMARY PROMPT
+    # -----------------------------------------------------
+
     prompt = f"""
 {SUMMARY_REQUEST_PROMPT}
 
 Here are the user's saved places:
 
 {all_places_text}
+
+Here is the text conversation containing questions
+and follow-up answers about those places:
+
+{conversation_text}
+
+Create the final travel-history email.
+
+For each saved place:
+- Include the place name and location.
+- Include the date visited.
+- Include the important historical information.
+- Include the architectural or cultural significance.
+- Include interesting facts.
+
+Also include a section called:
+
+💬 Follow-up Questions
+
+For each meaningful follow-up question about a saved place:
+- Show the user's question.
+- Give a concise version of the assistant's answer.
+
+Do not include the initial welcome message.
+Do not include unrelated conversation.
+Do not invent information.
+Only use information contained in the saved place records
+and conversation above.
+
+Keep the email clean, readable, and concise.
+Start with a friendly introduction.
+Finish with:
+
+Keep exploring!
 """
+
+    # -----------------------------------------------------
+    # GENERATE SUMMARY
+    # -----------------------------------------------------
 
     try:
 
