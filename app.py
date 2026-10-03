@@ -20,11 +20,6 @@ from database import (
     save_visited_place,
     get_visited_places,
 )
-
-# =========================================================
-# APP CONFIGURATION
-# =========================================================
-
 MODEL_NAME = "gemini-3.5-flash-lite"
 
 # Temporary local-development setting.
@@ -37,21 +32,10 @@ st.set_page_config(
     page_icon="📍",
     layout="centered",
 )
-# =========================================================
-# CUSTOM UI STYLING
-# =========================================================
-
 st.markdown(
     """
     <style>
 
-    /* -----------------------------------------------------
-       DARK BACKGROUND
-    ----------------------------------------------------- */
-
-    [data-testid="stAppViewContainer"] {
-        background: #121722;
-    }
     /* Main application width */
     .block-container {
         max-width: 900px;
@@ -110,19 +94,10 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-
-# =========================================================
-# SECRETS
-# =========================================================
-
 GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 GMAIL_ADDRESS = st.secrets["GMAIL_ADDRESS"]
 GMAIL_APP_PASSWORD = st.secrets["GMAIL_APP_PASSWORD"]
 
-
-# =========================================================
-# GEMINI CLIENT
-# =========================================================
 
 @st.cache_resource
 def get_gemini_client():
@@ -131,10 +106,6 @@ def get_gemini_client():
 
 gemini_client = get_gemini_client()
 initialize_database()
-
-# =========================================================
-# SESSION STATE
-# =========================================================
 
 if "onboarded" not in st.session_state:
     st.session_state.onboarded = False
@@ -161,9 +132,6 @@ if "last_place_info" not in st.session_state:
     st.session_state.last_place_info = ""
 
 
-# =========================================================
-# HELPER: ASK GEMINI
-# =========================================================
 def ask_gemini(parts):
     max_attempts = 3
 
@@ -193,10 +161,6 @@ def ask_gemini(parts):
 
     return "Please try again in a moment."
 
-# =========================================================
-# HELPER: LOAD SAVED PLACES
-# =========================================================
-
 def load_saved_places(user_email):
     rows = get_visited_places(user_email)
 
@@ -211,10 +175,6 @@ def load_saved_places(user_email):
         for row in rows
     ]
 
-# =========================================================
-# HELPER: ADD MESSAGE
-# =========================================================
-
 def add_message(role, kind, content):
     st.session_state.messages.append(
         {
@@ -223,11 +183,6 @@ def add_message(role, kind, content):
             "content": content,
         }
     )
-
-
-# =========================================================
-# HELPER: DISPLAY MESSAGE
-# =========================================================
 
 def render_message(message):
 
@@ -241,18 +196,11 @@ def render_message(message):
 
             st.write(message["content"])
 
-         # =========================================================
-# HELPER: CREATE HISTORY EMAIL SUMMARY
-# =========================================================
-
 def create_history_summary():
 
     if not st.session_state.visited_places:
         return None
 
-    # -----------------------------------------------------
-    # SAVED PLACES
-    # -----------------------------------------------------
 
     saved_places = []
 
@@ -271,10 +219,6 @@ History:
     all_places_text = "\n\n--------------------\n\n".join(
         saved_places
     )
-
-    # -----------------------------------------------------
-    # CONVERSATION / FOLLOW-UP QUESTIONS
-    # -----------------------------------------------------
 
     conversation_parts = []
 
@@ -315,10 +259,6 @@ Assistant answer:
     conversation_text = "\n\n".join(
         conversation_parts
     )
-
-    # -----------------------------------------------------
-    # GEMINI SUMMARY PROMPT
-    # -----------------------------------------------------
 
     prompt = f"""
 {SUMMARY_REQUEST_PROMPT}
@@ -362,10 +302,6 @@ Finish with:
 Keep exploring!
 """
 
-    # -----------------------------------------------------
-    # GENERATE SUMMARY
-    # -----------------------------------------------------
-
     try:
 
         summary_chat = gemini_client.chats.create(
@@ -383,10 +319,6 @@ Keep exploring!
         return (
             f"Could not create the email summary: {error}"
         )
-# =========================================================
-# HELPER: SEND EMAIL
-# =========================================================
-
 def send_email(to_address, subject, body):
 
     try:
@@ -417,10 +349,6 @@ def send_email(to_address, subject, body):
         return False, str(error)
 
 
-# =========================================================
-# HELPER: SEND VERIFICATION CODE
-# =========================================================
-
 def send_verification_code(to_address, code):
 
     subject = (
@@ -448,10 +376,6 @@ Place History Explorer
     )
 
 
-# =========================================================
-# ONBOARDING + EMAIL VERIFICATION
-# =========================================================
-
 if not st.session_state.onboarded:
 
     st.title("📍 Place History Explorer")
@@ -459,10 +383,6 @@ if not st.session_state.onboarded:
     st.subheader(
         "Discover the story behind the places you visit."
     )
-
-    # =====================================================
-    # STEP 1: NAME + EMAIL
-    # =====================================================
 
     if not st.session_state.verification_sent:
 
@@ -500,10 +420,6 @@ if not st.session_state.onboarded:
                 st.session_state.name = name.strip()
                 st.session_state.email = email.strip()
 
-                # =================================================
-                # TEMPORARY DEVELOPMENT MODE
-                # =================================================
-
                 if DEVELOPMENT_MODE:
 
                     st.session_state.chat = (
@@ -524,10 +440,6 @@ if not st.session_state.onboarded:
                     st.session_state.onboarded = True
 
                     st.rerun()
-
-                # =================================================
-                # NORMAL MODE: EMAIL VERIFICATION
-                # =================================================
 
                 else:
 
@@ -565,10 +477,6 @@ if not st.session_state.onboarded:
                         )
 
 
-    # =====================================================
-    # STEP 2: VERIFY EMAIL
-    # =====================================================
-
     else:
 
         st.info(
@@ -593,9 +501,6 @@ if not st.session_state.onboarded:
                 use_container_width=True,
             )
 
-        # =================================================
-        # VERIFY CODE
-        # =================================================
 
         if verify_button:
 
@@ -656,10 +561,6 @@ if not st.session_state.onboarded:
 
                 st.rerun()
 
-        # =================================================
-        # RESEND CODE
-        # =================================================
-
         st.caption(
             "Didn't receive the code?"
         )
@@ -703,10 +604,6 @@ if not st.session_state.onboarded:
     # Stop here until the user is verified
     st.stop()
 
-
-# =========================================================
-# MAIN HEADER
-# =========================================================
 
 header_col, button_col = st.columns(
     [5, 2],
@@ -762,17 +659,10 @@ with button_col:
             st.warning(
                 "You don't have any saved places yet."
             )
-# =========================================================
-# USER INFORMATION
-# =========================================================
-
 st.caption(
     f"Logged in as {st.session_state.name} "
     f"• History will be sent to {st.session_state.email}"
 )
-# =========================================================
-# WELCOME MESSAGE
-# =========================================================
 
 if not st.session_state.messages:
 
@@ -785,17 +675,9 @@ if not st.session_state.messages:
     )
 
 
-# =========================================================
-# DISPLAY CHAT HISTORY
-# =========================================================
-
 for message in st.session_state.messages:
 
     render_message(message)
-
-# =========================================================
-# EXPLORE A PLACE
-# =========================================================
 
 st.markdown("## 🌍 Explore a Place")
 
@@ -813,11 +695,6 @@ location = st.text_input(
     ),
 )
 
-
-# =========================================================
-# PHOTO + CHAT INPUT
-# =========================================================
-
 user_input = st.chat_input(
     "💬 Ask about this place or attach a photo",
     accept_file=True,
@@ -827,10 +704,6 @@ user_input = st.chat_input(
         "png",
     ],
 )
-
-# =========================================================
-# MY VISITED PLACES
-# =========================================================
 
 st.markdown("## 🗺️ My Visited Places")
 
@@ -861,34 +734,19 @@ else:
 
             with st.container(border=True):
 
-                # -----------------------------------------
-                # PHOTO
-                # -----------------------------------------
-
+               
                 st.image(
                     place["photo"],
                     width="stretch",
                 )
 
-                # -----------------------------------------
-                # PLACE NAME
-                # -----------------------------------------
-
                 st.markdown(
                     f"### 📍 {place['location']}"
                 )
 
-                # -----------------------------------------
-                # DATE
-                # -----------------------------------------
-
                 st.caption(
                     f"📅 Visited: {place['date']}"
                 )
-
-                # -----------------------------------------
-                # HISTORY
-                # -----------------------------------------
 
                 with st.expander(
                     "📖 Read Place History"
@@ -909,9 +767,6 @@ else:
                     )
 
 
-# =====================================================
-# PROCESS USER INPUT
-# =====================================================
 
 if user_input:
 
@@ -924,10 +779,6 @@ if user_input:
     text = user_input.text
 
     parts = []
-
-    # =====================================================
-    # PHOTO
-    # =====================================================
 
     if photo is not None:
 
@@ -945,10 +796,6 @@ if user_input:
                 mime_type=photo.type,
             )
         )
-
-    # =====================================================
-    # USER TEXT
-    # =====================================================
 
     if text:
 
@@ -989,10 +836,6 @@ requires information that is not available.
         else:
 
             parts.append(text)
-
-    # =====================================================
-    # PHOTO WITHOUT TEXT
-    # =====================================================
 
     elif photo is not None:
 
@@ -1045,20 +888,11 @@ If the place cannot be reliably identified
 from the photo, clearly say so.
 """
             )
-
-    # =====================================================
-    # SEND TO GEMINI
-    # =====================================================
-
     with st.spinner(
         "Exploring the history of this place..."
     ):
 
         answer = ask_gemini(parts)
-
-    # =====================================================
-    # DISPLAY / SAVE AI RESPONSE
-    # =====================================================
 
     add_message(
         "assistant",
@@ -1067,11 +901,6 @@ from the photo, clearly say so.
     )
 
     st.session_state.last_place_info = answer
-
-    # =====================================================
-    # SAVE VISITED PLACE
-    # =====================================================
-
     if photo is not None:
 
         if location.strip():
