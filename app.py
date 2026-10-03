@@ -212,24 +212,6 @@ def load_saved_places(user_email):
     ]
 
 # =========================================================
-# HELPER: LOAD SAVED PLACES
-# =========================================================
-
-def load_saved_places(user_email):
-
-    rows = get_visited_places(user_email)
-
-    return [
-        {
-            "id": row["id"],
-            "location": row["location"],
-            "date": row["visit_date"],
-            "photo": bytes(row["photo"]),
-            "history": row["history"],
-        }
-        for row in rows
-    ]
-# =========================================================
 # HELPER: ADD MESSAGE
 # =========================================================
 
@@ -842,6 +824,7 @@ else:
 # =====================================================
 
 if user_input:
+
     photo = (
         user_input.files[0]
         if user_input.files
@@ -851,7 +834,6 @@ if user_input:
     text = user_input.text
 
     parts = []
-
 
     # =====================================================
     # PHOTO
@@ -874,7 +856,6 @@ if user_input:
             )
         )
 
-
     # =====================================================
     # USER TEXT
     # =====================================================
@@ -887,8 +868,37 @@ if user_input:
             text,
         )
 
-        parts.append(text)
+        # If the user is asking a follow-up question about
+        # the previously analyzed place, explicitly provide
+        # the previous place information as context.
+        if (
+            photo is None
+            and st.session_state.last_place_info
+        ):
 
+            parts.append(
+                f"""
+We are continuing the conversation about the place
+that was analyzed previously.
+
+Here is the previous place analysis:
+
+{st.session_state.last_place_info}
+
+The user is now asking this follow-up question:
+
+{text}
+
+Answer the follow-up question using the previous
+place analysis as context. Do not ask the user to
+upload the photo again unless the question truly
+requires information that is not available.
+"""
+            )
+
+        else:
+
+            parts.append(text)
 
     # =====================================================
     # PHOTO WITHOUT TEXT
@@ -946,7 +956,6 @@ from the photo, clearly say so.
 """
             )
 
-
     # =====================================================
     # SEND TO GEMINI
     # =====================================================
@@ -956,7 +965,6 @@ from the photo, clearly say so.
     ):
 
         answer = ask_gemini(parts)
-
 
     # =====================================================
     # DISPLAY / SAVE AI RESPONSE
@@ -1013,7 +1021,7 @@ from the photo, clearly say so.
         )
 
         st.success(
-    f"✅ {saved_location} has been saved to My Visited Places."
-)
+            f"✅ {saved_location} has been saved to My Visited Places."
+        )
 
     st.rerun()
